@@ -21,7 +21,6 @@ def _create_dataset(count=1) -> list:
 
     for _ in range(count):
         date_range = pd.date_range(start='1/1/2009', end='12/31/2012', freq='W-MON')
-        data = np.random.randint(low=25,high=1000,size=len(date_range))
         output.extend(
             zip(
                 _random_vals_date_range(
@@ -34,7 +33,7 @@ def _create_dataset(count=1) -> list:
                     len(STATES),
                     date_range,
                 ),
-                data,
+                np.random.randint(low=25,high=1000,size=len(date_range)),
                 date_range,
             ),
         )
