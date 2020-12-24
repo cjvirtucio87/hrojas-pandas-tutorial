@@ -1,5 +1,9 @@
 # pylint: disable=missing-docstring
+import os
+import tempfile
 import unittest
+import uuid
+import shutil
 
 import numpy as np
 import pandas as pd
@@ -40,9 +44,33 @@ def _create_dataset(count=1) -> list:
 
     return output
 
+
 class TestDataset(unittest.TestCase):
 
     def test__create_dataset(self):
         # pylint: disable=no-self-use
         dataset = _create_dataset()
-        print(dataset)
+        temp_dir_path = os.path.join(
+            tempfile.gettempdir(),
+            str(uuid.uuid1()),
+        )
+        test_excel_filepath = os.path.join(
+            temp_dir_path,
+            'test.xlsx',
+        )
+        try:
+            os.mkdir(temp_dir_path)
+            dataframe = pd.DataFrame(
+                data=dataset,
+                columns=[
+                    'State',
+                    'Status',
+                    'CustomerCount',
+                    'StatusDate',
+                ],
+            )
+            dataframe.to_excel(test_excel_filepath, index=False)
+            self.assertTrue(os.path.isfile(test_excel_filepath))
+        finally:
+            if os.path.exists(temp_dir_path) and os.path.isdir(temp_dir_path):
+                shutil.rmtree(temp_dir_path)
