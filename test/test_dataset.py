@@ -1,4 +1,5 @@
 # pylint: disable=missing-docstring
+import logging
 import os
 import tempfile
 import unittest
@@ -28,13 +29,13 @@ def _create_dataset(count=1) -> list:
         output.extend(
             zip(
                 _random_vals_date_range(
-                    STATUS,
-                    len(STATUS),
+                    STATES,
+                    len(STATES),
                     date_range,
                 ),
                 _random_vals_date_range(
-                    STATES,
-                    len(STATES),
+                    STATUS,
+                    len(STATUS),
                     date_range,
                 ),
                 np.random.randint(low=25,high=1000,size=len(date_range)),
@@ -47,7 +48,15 @@ def _create_dataset(count=1) -> list:
 
 class TestDataset(unittest.TestCase):
 
-    def test__create_dataset(self):
+    def __init__(self, *args, **kwargs):
+        self._logger = logging.getLogger(__name__)
+        logging.basicConfig(level='INFO')
+        super().__init__(
+            *args,
+            **kwargs
+        )
+
+    def test_create_dataset(self):
         # pylint: disable=no-self-use
         dataset = _create_dataset()
         temp_dir_path = os.path.join(
@@ -56,7 +65,7 @@ class TestDataset(unittest.TestCase):
         )
         test_excel_filepath = os.path.join(
             temp_dir_path,
-            'test.xlsx',
+            'test.xls',
         )
         try:
             os.mkdir(temp_dir_path)
@@ -71,6 +80,19 @@ class TestDataset(unittest.TestCase):
             )
             dataframe.to_excel(test_excel_filepath, index=False)
             self.assertTrue(os.path.isfile(test_excel_filepath))
+
+            read_dataframe = pd.read_excel(
+                test_excel_filepath,
+                0,
+            )
+
+            states = set([])
+            unique_states = read_dataframe['State'].unique()
+            self.assertNotEqual(len(dataframe.index), len(unique_states))
+            self.assertTrue(len(unique_states) > 0)
+            for state in unique_states:
+                self.assertFalse(state in states)
+                states.add(state)
         finally:
             if os.path.exists(temp_dir_path) and os.path.isdir(temp_dir_path):
                 shutil.rmtree(temp_dir_path)

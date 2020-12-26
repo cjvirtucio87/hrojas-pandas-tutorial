@@ -1,3 +1,5 @@
 openpyxl
 pandas
 pylint
+xlrd
+xlwt
