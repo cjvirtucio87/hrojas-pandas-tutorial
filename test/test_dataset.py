@@ -93,6 +93,12 @@ class TestDataset(unittest.TestCase):
             for state in unique_states:
                 self.assertFalse(state in states)
                 states.add(state)
+
+            states_with_status_one = read_dataframe[read_dataframe['Status'] == 1]
+            self.assertTrue(len(states_with_status_one) > 0)
+            self._logger.info(states_with_status_one)
+            for _, state in states_with_status_one.iterrows():
+                self.assertTrue(state['Status'] == 1)
         finally:
             if os.path.exists(temp_dir_path) and os.path.isdir(temp_dir_path):
                 shutil.rmtree(temp_dir_path)
