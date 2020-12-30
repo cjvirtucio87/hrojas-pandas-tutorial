@@ -96,9 +96,61 @@ class TestDataset(unittest.TestCase):
 
             states_with_status_one = read_dataframe[read_dataframe['Status'] == 1]
             self.assertTrue(len(states_with_status_one) > 0)
-            self._logger.info(states_with_status_one)
             for _, state in states_with_status_one.iterrows():
                 self.assertTrue(state['Status'] == 1)
+
+            state_date = read_dataframe.groupby(['State', 'StatusDate']).sum()
+            self.assertTrue('Status' in state_date)
+            del state_date['Status']
+            self.assertFalse('Status' in state_date)
+            self.assertEqual(
+                'State',
+                state_date.index.levels[0].name,
+            )
+            self.assertEqual(
+                'StatusDate',
+                state_date.index.levels[1].name,
+            )
+
+            state_year_month = state_date.groupby(
+                [
+                    state_date.index.get_level_values(0),
+                    state_date.index.get_level_values(1).year,
+                    state_date.index.get_level_values(1).month,
+                ],
+            )
+
+            def lower_bound(datum):
+                return (
+                    datum.quantile(q=0.25) -
+                    (1.5 * datum.quantile(q=0.75) - datum.quantile(q=0.25))
+                )
+
+            def upper_bound(datum):
+                return (
+                    datum.quantile(q=0.75) +
+                    (1.5 * datum.quantile(q=0.75) - datum.quantile(q=0.25))
+                )
+
+            state_date['Lower'] = state_year_month['CustomerCount'].transform(lower_bound)
+            state_date['Upper'] = state_year_month['CustomerCount'].transform(upper_bound)
+            state_date['Outlier'] = (state_date['CustomerCount'] < state_date['Lower']) \
+                | (state_date['CustomerCount'] > state_date['Upper'])
+            state_date = state_date[state_date['Outlier'] == 0]
+            for _, row in state_date.iterrows():
+                self.assertFalse(row['Outlier'])
+
+            daily = pd.DataFrame(
+                state_date['CustomerCount'] \
+                    .groupby(state_date.index.get_level_values(1)) \
+                    .sum(),
+            )
+            daily.columns = ['CustomerCount']
+            daily['Max'] = daily['CustomerCount'] \
+                .groupby([lambda x: x.year, lambda x: x.month]) \
+                .transform(lambda x: x.max())
+
+            self._logger.info(daily.head())
         finally:
             if os.path.exists(temp_dir_path) and os.path.isdir(temp_dir_path):
                 shutil.rmtree(temp_dir_path)
