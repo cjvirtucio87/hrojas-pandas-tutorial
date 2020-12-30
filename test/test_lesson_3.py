@@ -46,7 +46,7 @@ def _create_dataset(count=1) -> list:
     return output
 
 
-class TestDataset(unittest.TestCase):
+class TestLesson3(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         self._logger = logging.getLogger(__name__)
